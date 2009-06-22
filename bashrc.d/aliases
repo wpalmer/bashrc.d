@@ -1,4 +1,7 @@
 alias ll='ls -l'
+function ..(){
+	cd ..
+}
 function dirs(){
 	builtin dirs -v | tac
 }
