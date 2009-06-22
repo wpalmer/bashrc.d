@@ -1,2 +1,4 @@
 alias ll='ls -l'
-alias dirs='dirs -v'
+function dirs(){
+	builtin dirs -v | tac
+}
