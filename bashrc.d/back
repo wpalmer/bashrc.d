@@ -2,18 +2,22 @@
 
 function cd(){
 	# If "cd" is successful and has an effect
-	if \
-		local new_directory="$(builtin cd "$@" && builtin pwd)" &&
-		[ "$new_directory" != "$(builtin pwd)" ];
-	then
-		if \
-			builtin dirs -l +1 >/dev/null 2>&1 &&
-			[ "$(builtin cd "$(builtin dirs -l +1)" && builtin pwd)" = "${new_directory}" ];
-		then
-			builtin popd +1 -n >/dev/null 2>&1
-		fi
+	if local new_directory="$(builtin cd "$@" && builtin pwd)"; then
+		# if "new directory" is the same as "old directory", just change to the directory and don't push the
+		# transition. There are edge-cases where this would not be desired, but those are highly unlikely for
+		# an interactive session (which is the only time this should ever be included anyway).
+		if [ "$new_directory" = "$(builtin pwd)" ]; then
+			builtin cd "$new_directory"
+		else
+			if \
+				builtin dirs -l +1 >/dev/null 2>&1 &&
+				[ "$(builtin cd "$(builtin dirs -l +1)" && builtin pwd)" = "${new_directory}" ];
+			then
+				builtin popd +1 -n >/dev/null 2>&1
+			fi
 
-		builtin pushd "${new_directory}" >/dev/null 2>&1
+			builtin pushd "${new_directory}" >/dev/null 2>&1
+		fi
 	fi
 }
 
