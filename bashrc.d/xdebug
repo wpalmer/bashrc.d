@@ -1,0 +1,33 @@
+function xdebug(){
+	local XDEBUG_CONFIG="${XDEBUG_CONFIG}"
+	
+	local xdebug_remote_enable=1
+	local xdebug_profiler_enable=0
+	local xdebug_profiler_output_dir='/home/web/logs'
+
+	while [ -n "$1" ]; do
+	        case "$1" in
+	                --profile)
+				xdebug_profiler_enable=1
+                	        ;;
+
+			--*)
+				sed 's/^....//' <<<USAGE
+				Usage:
+					xdebug [options] php ....
+
+				Options:
+
+					--profile
+
+						Enable profiling
+USAGE
+				;;
+			
+			*)
+				XDEBUG_CONFIG="remote_enable=${xdebug_remote_enable} profiler_enable=${xdebug_profiler_enable} profiler_output_dir=${xdebug_profiler_output_dir}" "$@"
+		esac
+
+		shift
+	done
+}
