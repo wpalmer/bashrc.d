@@ -1,0 +1,4 @@
+function limits(){
+	local what="[A-Z]*$1"
+	sed -n '/^# *define  *\('"$what"'_MAX\)/{ s//\1/; p; }' /usr/include/limits.h
+}
