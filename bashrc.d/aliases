@@ -5,3 +5,7 @@ function ..(){
 function dirs(){
 	builtin dirs -v | tac
 }
+function mcd(){
+    local args=("$@")
+    mkdir "${args[@]}" && cd "${args[${#args[@]}-1]}"
+}
