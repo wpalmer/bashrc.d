@@ -3,7 +3,8 @@ function ..(){
 	cd ..
 }
 function dirs(){
-	builtin dirs -v | tac
+	[ $# -eq 0 ] && builtin dirs -v | tac
+	[ $# -gt 0 ] && builtin dirs "$@"
 }
 function mcd(){
     local args=("$@")
