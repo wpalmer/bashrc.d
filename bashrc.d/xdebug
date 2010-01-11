@@ -1,6 +1,6 @@
 function xdebug(){
 	local XDEBUG_CONFIG="${XDEBUG_CONFIG}"
-	
+
 	local xdebug_remote_enable=1
 	local xdebug_profiler_enable=0
 	local xdebug_profiler_output_dir='/home/web/logs'
@@ -23,7 +23,7 @@ function xdebug(){
 						Enable profiling
 USAGE
 				;;
-			
+
 			*)
 				XDEBUG_CONFIG="remote_enable=${xdebug_remote_enable} profiler_enable=${xdebug_profiler_enable} profiler_output_dir=${xdebug_profiler_output_dir}" "$@"
 		esac
