@@ -26,6 +26,7 @@ USAGE
 
 			*)
 				XDEBUG_CONFIG="remote_enable=${xdebug_remote_enable} profiler_enable=${xdebug_profiler_enable} profiler_output_dir=${xdebug_profiler_output_dir}" "$@"
+				return $?
 		esac
 
 		shift
