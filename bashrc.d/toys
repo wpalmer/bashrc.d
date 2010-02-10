@@ -1,3 +1,52 @@
 function reverse(){
 	echo "$@" | sed 's/./&\n/g' | tac | tr -d '\n' | sed 's/$/\n/'
 }
+
+function rotx(){
+	if [ $# -gt 0  ]; then
+		rot=$1
+		shift
+	else
+		rot=13
+	fi
+
+	{
+		if [ $# -gt 0 ]; then
+			echo "$@"
+		else
+			cat
+		fi
+	} | awk '
+	BEGIN{
+		ORD_A = 65;
+		ORD_a = 97;
+		ORD_Z = ORD_A + 25;
+		ORD_z = ORD_a + 25;
+		for( i = ORD_A; i <= ORD_Z; i++ ){ ascii_table[ sprintf("%c", i) ] = i; }
+		for( i = ORD_a; i <= ORD_z; i++ ){ ascii_table[ sprintf("%c", i) ] = i; }
+	}
+	{
+		if( rot == "" ){ rot = 13; }
+		rot = rot % 26;
+		if( rot < 0 ){ rot = rot % 26 + 26; }
+
+		input=$0;
+		output="";
+		for( i = 1; i <= length(input); i++ ){
+			c = substr(input, i, 1);
+			o = ascii_table[ c ];
+			if( o != "" ){
+				r = ascii_table[ tolower(c) ] + (rot%26);
+				output = output sprintf( "%c", r <= ORD_z ? o + (rot%26) : o - (26 - rot%26) );
+			} else {
+				output = output c;
+			}
+		}
+		print output;
+	}
+	' rot="$rot"
+}
+
+function rot13(){
+	rotx 13 "$@"
+}
