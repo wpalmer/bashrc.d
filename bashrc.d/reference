@@ -136,3 +136,12 @@ function ascii(){
 		(del)	127	0177	0x7f
 ASCII
 }
+
+function random_hex(){
+	local n="${1-40}"
+	head -c "$(( $n / 2 + 1 ))" /dev/urandom |
+        xxd -c 256 -p |
+        tr -d '\n' |
+        head -c "$n" &&
+    echo
+}
