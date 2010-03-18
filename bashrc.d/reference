@@ -145,3 +145,7 @@ function random_hex(){
         head -c "$n" &&
     echo
 }
+
+function random_readable(){
+	random_hex "$@" | tr 0123456789abcdef 23457ABFHKPRUXYZ
+}
