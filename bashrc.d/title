@@ -1,0 +1,13 @@
+function __title(){
+	local pwd="$(__peek_pwd_alias "$PWD")"
+	local title="$USERNAME@$HOSTNAME: $pwd"
+	echo -ne "\033]0;$title\007"
+}
+
+case "$TERM" in
+	xterm*|rxvt*)
+		__poke_prompt_command title __title
+		;;
+	*)
+		;;
+esac
