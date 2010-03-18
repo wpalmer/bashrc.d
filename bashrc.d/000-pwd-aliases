@@ -1,3 +1,8 @@
+# Reads from a file called ~/.pwd_aliases. The file is in the format:
+# /full/path/as/$PWD/would/say: Directory Alias
+#
+# Example:
+# /home/me: Home
 function __peek_pwd_alias(){
 	local pwd="$1"
 	local pwd_tilda="${pwd/#$HOME/~}"
