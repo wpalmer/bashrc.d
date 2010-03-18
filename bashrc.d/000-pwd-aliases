@@ -1,0 +1,30 @@
+function __peek_pwd_alias(){
+	local pwd="$1"
+	local pwd_tilda="${pwd/#$HOME/~}"
+	local mapping
+
+	if [ -e ~/.pwd_aliases ]; then
+		mapping="$(
+		grep -F "$pwd:"$'\n'"$pwd_tilda:" ~/.pwd_aliases | while read mapping
+		do
+			if [ "${mapping#$pwd:}" != "$mapping" ]; then
+				echo "${mapping#$pwd:}" | sed 's/^\s*//'
+				break
+			fi
+
+			if [ "${mapping#$pwd_tilda:}" != "$mapping" ]; then
+				echo "${mapping#$pwd_tilda:}" | sed 's/^\s*//'
+				break
+			fi
+		done
+		)"
+	fi
+
+	if [ -n "$mapping" ]; then
+		echo "$mapping"
+		return 0
+	fi
+
+	echo "${pwd_tilda}"
+	return 0
+}
