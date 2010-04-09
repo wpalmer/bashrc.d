@@ -23,6 +23,22 @@ function cd(){
 
 function back(){
 	local num="$1"
-	[ -z "$1" ] && num="1"
+	[ -z "$num" ] && num="1"
+
+	if echo " $num" | grep -q '^ .*[^0-9]'; then
+		local count="$(builtin dirs -v -l | sed 's/\s*[0-9]*\s*//' | grep -F "$num" | sort -u | wc -l)"
+		if [ $count -gt 1 ]; then
+			echo 'ambiguous pattern `'"$num'" >&2
+			return 1
+		fi
+
+		if [ $count -lt 1 ]; then
+			echo 'nothing matches `'"$num'" >&2
+			return 1
+		fi
+
+		cd "$(builtin dirs -v -l | sed 's/\s*[0-9]*\s*//' | grep -F "$num" | head -1)"
+		return $?
+	fi
 	builtin dirs -l +"$num" >/dev/null 2>&1 && cd "$(builtin dirs -l +"$num")"
 }
