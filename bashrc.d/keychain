@@ -1,8 +1,10 @@
-if [ -n "$SSH_CLIENT" ]; then
-    eval `keychain -q -Q`
-fi
+if which keychain >/dev/null 2>&1; then
+    if [ -n "$SSH_CLIENT" ]; then
+        eval `keychain -q -Q`
+    fi
 
-function ssh_add_all(){
-    [ ! -d ~/.ssh ] && return
-    find ~/.ssh -name 'id_rsa*' -a -not -name 'id_rsa*.pub' -exec keychain -q '{}' ';'
-}
+    function ssh_add_all(){
+        [ ! -d ~/.ssh ] && return
+        find ~/.ssh -name 'id_rsa*' -a -not -name 'id_rsa*.pub' -exec keychain -q '{}' ';'
+    }
+fi
