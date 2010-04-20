@@ -7,6 +7,10 @@ fi
 
 [ -z "$PS1" ] && return
 
-for bashrc in ~/.bashrc.d/*; do
-	. "$bashrc"
+for bashrcd in /etc/bashrc.d ~/.bashrc.d; do
+    if [ -d "$bashrcd" ]; then
+        for bashrc in "$bashrcd"/*; do
+            . "$bashrc"
+        done
+    fi
 done
