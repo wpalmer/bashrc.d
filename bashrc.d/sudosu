@@ -1,3 +1,5 @@
-function su(){
-	sudo su "$@"
-}
+if uname -a | grep -q Ubuntu; then
+	function su(){
+		sudo su "$@"
+	}
+fi
