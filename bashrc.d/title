@@ -5,7 +5,7 @@ function __title(){
 }
 
 case "$TERM" in
-	xterm*|rxvt*)
+	xterm*|rxvt*|screen)
 		__poke_prompt_command title __title
 		;;
 	*)
