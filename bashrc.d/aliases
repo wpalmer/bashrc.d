@@ -10,3 +10,6 @@ function mcd(){
     local args=("$@")
     mkdir "${args[@]}" && cd "${args[${#args[@]}-1]}"
 }
+function c(){
+	column -nts$'\t'
+}
