@@ -149,3 +149,10 @@ function random_hex(){
 function random_readable(){
 	random_hex "$@" | tr 0123456789abcdef 23457ABFHKPRUXYZ
 }
+
+safe64_encode(){
+	 base64 -w 0|sed 's/\([^=]\)$/\10/;s/==$/2/;s/=$/1/;s/-/+/g;'|tac -r -s '.'
+}
+safe64_decode(){
+	tac -r -s '.' | sed 's/2$/==/;s/1$/=/;s/0$//;s/-/+/g;'|base64 -d
+}
