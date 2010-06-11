@@ -156,3 +156,10 @@ safe64_encode(){
 safe64_decode(){
 	tac -r -s '.' | sed 's/2$/==/;s/1$/=/;s/0$//;s/-/+/g;'|base64 -d
 }
+
+inet_ntoa(){
+	php -r 'echo long2ip($_SERVER["argv"][1])."\n";' "$1"
+}
+inet_aton(){
+	php -r 'printf("%u\n", ip2long($_SERVER["argv"][1]));' "$1"
+}
