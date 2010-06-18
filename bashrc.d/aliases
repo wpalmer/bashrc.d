@@ -2,6 +2,14 @@ alias ll='ls -lA'
 function ..(){
 	cd ..
 }
+function cdd(){
+	if [ -d "$1" -o ! -e "$1" ] || [ ! -d "$(dirname "$1")" ]; then
+		cd "$@"
+		return $?
+	fi
+	cd "$(dirname "$1")"
+	return $?
+}
 function dirs(){
 	[ $# -eq 0 ] && builtin dirs -v | tac
 	[ $# -gt 0 ] && builtin dirs "$@"
