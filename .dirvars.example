@@ -1,0 +1,13 @@
+; Example of dirvars ini-like syntax
+
+[ global ]
+	gits = ~/git
+	svns = ~/svn
+	bashrc = $gits/bashrc
+	legacy = $svns/bashrc
+
+[ $gits ]
+	proj = $bashrc
+
+[ $svns ]
+	proj = $legacy
