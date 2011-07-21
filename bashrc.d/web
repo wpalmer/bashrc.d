@@ -1,0 +1,3 @@
+function urlencode(){
+	php -r 'echo urlencode($_SERVER["argv"][1])."\n";' "$1"
+}
