@@ -31,3 +31,37 @@ else
 		command ls --color=auto "$@"
 	}
 fi
+
+gcommands=(
+	base64
+	basename
+	dirname
+	readlink
+	cat
+	tac
+	sed
+	tail
+	tee
+	sort
+	split
+	stat
+	nice
+	cp
+	mv
+	rm
+	ln
+	rmdir
+	touch
+	date
+	cut
+	df
+	'['
+	seq
+	sleep
+)
+
+for command in "${gcommands[@]}"; do
+	if which g$command >/dev/null 2>&1; then
+		eval "function $command(){ command g$command \"\$@\"; }"
+	fi
+done
