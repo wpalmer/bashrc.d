@@ -21,3 +21,13 @@ function mcd(){
 function c(){
 	column -nts$'\t'
 }
+
+if which gls >/dev/null 2>&1; then
+	function ls(){
+		command gls --color=auto "$@"
+	}
+else
+	function ls(){
+		command ls --color=auto "$@"
+	}
+fi
