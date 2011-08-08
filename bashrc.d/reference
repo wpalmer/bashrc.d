@@ -1,6 +1,8 @@
 function limits(){
 	local what="[A-Z]*$1"
-	sed -n '/^# *define  *\('"$what"'_MAX\)/{ s//\1/; p; }' /usr/include/limits.h | column -s $'\t' -t
+	gcc -E -dM /usr/include/limits.h |
+	sed -n '/^# *define  *\('"$what"'_MAX\)/{ s//\1/; p; }' |
+	column -s $'\t' -t
 }
 
 function ascii(){
