@@ -1,0 +1,57 @@
+function grep(){
+	[ -t 0 ] || {
+		command grep "$@"
+		return "$?"
+	}
+	local is_dir=1
+	local candidate
+	local did_expression=0
+	local next_is_expression=0
+	local did_haystack=0
+
+	for candidate in "$@"; do
+		[ "$candidate" = "-e" ] && {
+			next_is_expression=1
+			continue
+		}
+		[ $next_is_expression -eq 1 ] && {
+			next_is_expression=0
+			did_expression=1
+			continue
+		}
+		[ "$candidate" = "${candidate#-}" ] || continue
+		[ $did_expression -eq 1 ] || {
+			did_expression=1
+			continue
+		}
+
+		did_haystack=1
+		[ -d "$candidate" ] || {
+			is_dir=0
+			break
+		}
+	done
+
+	suffix=
+	if [ $did_haystack -eq 0 ]; then
+		suffix=.
+		is_dir=1
+	fi
+
+	local extra_options=(-I)
+	if [ $is_dir -eq 1 ]; then
+		extra_options[${#extra_options[@]}]='-R'
+	fi
+
+	if [ -e ~/.grepignore ]; then
+		local line
+		while read line; do
+			if [ "$line" = "${line%/}" ]; then
+				extra_options[${#extra_options[@]}]="--exclude=$line"
+			else
+				extra_options[${#extra_options[@]}]="--exclude-dir=$line"
+			fi
+		done < <(sed -e '/^\s#/d' -e 's/^\s*//;' -e 's/\s*$//' ~/.grepignore)
+	fi
+	command grep "${extra_options[@]}" "$@" $suffix
+}
