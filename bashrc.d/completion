@@ -1,1 +1,11 @@
-. ~/git/git/contrib/completion/git-completion.bash
+__completion_candidates=(
+	/etc/bash_completion
+	/opt/local/etc/bash_completion
+	~/git/git/contrib/completion/git-completion.bash
+)
+
+for bash_completion in "${__completion_candidates[@]}"; do
+        if [ -f $bash_completion ]; then
+                . $bash_completion
+        fi
+done
