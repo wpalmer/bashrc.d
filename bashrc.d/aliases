@@ -21,6 +21,13 @@ function mcd(){
 function c(){
 	column -nts$'\t'
 }
+function screen(){
+	if [ $# -eq 0 ]; then
+		command screen -A -x -RR
+	else
+		command screen "$@"
+	fi
+}
 
 if which gls >/dev/null 2>&1; then
 	function ls(){
