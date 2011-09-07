@@ -1,3 +1,5 @@
+[ -n "$BASHRC_ONCE" ] && return || BASHRC_ONCE=1
+
 if [ -e ~/.paths.low ]; then
 	export PATH="$PATH$(cat ~/.paths.low | tr '\n' :|sed -e 's/^/:/' -e 's/::*/:/g' -e 's/:$//' -e 's/^:$//')"
 fi
