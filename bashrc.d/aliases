@@ -1,3 +1,8 @@
+function rebash(){
+	unset BASHRC_ONCE
+	. ~/.bashrc
+}
+
 alias ll='ls -lA'
 function ..(){
 	cd ..
