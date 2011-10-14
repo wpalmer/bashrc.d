@@ -4,9 +4,6 @@ function rebash(){
 }
 
 alias ll='ls -lA'
-function ..(){
-	cd ..
-}
 function cdd(){
 	if [ -d "$1" -o ! -e "$1" ] || [ ! -d "$(dirname "$1")" ]; then
 		cd "$@"
@@ -22,6 +19,36 @@ function dirs(){
 function mcd(){
     local args=("$@")
     mkdir "${args[@]}" && cd "${args[${#args[@]}-1]}"
+}
+function up(){
+	if [ $# -lt 1 ]; then
+		cd ..
+		return 0
+	fi
+
+	local oldIFS="$IFS"
+	IFS=/
+	local dirs=(`pwd`)
+	IFS="$oldIFS"
+	while [ ${#dirs[@]} -gt 0 ]; do
+		oldIFS="$IFS"
+		IFS=/
+		local part="${dirs[${#dirs[@]}-1]}"
+		local dir="${dirs[*]}"
+		IFS="$oldIFS"
+
+		unset dirs[${#dirs[@]}-1]
+		if [ "$part" = "$1" ]; then
+			cd "$dir"
+			return 0
+		fi
+	done
+
+	echo "directory '$1' is not an ancestor of the current working directory" >&2
+	return 1
+}
+function ..(){
+	up "$@"
 }
 function c(){
 	column -nts$'\t'
