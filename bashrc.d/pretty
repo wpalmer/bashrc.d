@@ -1,0 +1,20 @@
+pretty-cat(){
+	if [ -t 1 ]; then
+		if [ -n "$PRETTY_CAT_HIGHLIGHT_LANG" ]; then
+			highlight -O ansi -S "$PRETTY_CAT_HIGHLIGHT_LANG" |
+			less -RF "$@"
+		else
+			less -F "$@"
+		fi
+	else
+		cat "$@"
+	fi
+}
+
+pretty-xml(){
+	xmllint --format "$@" | PRETTY_CAT_HIGHLIGHT_LANG=xml pretty-cat
+}
+
+pretty-json(){
+	python -mjson.tool "$@"| PRETTY_CAT_HIGHLIGHT_LANG=js pretty-cat
+}
