@@ -1,6 +1,6 @@
 pretty-cat(){
 	if [ -t 1 ]; then
-		if [ -n "$PRETTY_CAT_HIGHLIGHT_LANG" ]; then
+		if [ -n "$PRETTY_CAT_HIGHLIGHT_LANG" ] && hash highlight 2>/dev/null; then
 			highlight -O ansi -S "$PRETTY_CAT_HIGHLIGHT_LANG" |
 			less -RF "$@"
 		else
