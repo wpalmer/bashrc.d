@@ -18,3 +18,44 @@ pretty-xml(){
 pretty-json(){
 	python -mjson.tool "$@"| PRETTY_CAT_HIGHLIGHT_LANG=js pretty-cat
 }
+
+pretty-guess(){
+	local arg
+	for arg in "$@"; do
+		case "$arg" in
+			*.[xX][mM][lL])
+				echo "xml"
+				return 0
+			;;
+			*.[jJ][sS]|*.[Jj][sS][oO][nN])
+				echo "json"
+				return 0
+			;;
+		esac
+
+		if [ -f "$arg" -a -r "$arg" ]; then
+			case "$(file -b --mime-type "$arg")" in
+				application/xml)
+					echo "xml"
+					return 0
+					;;
+				application/json)
+					echo "json"
+					return 0
+					;;
+			esac
+		fi
+	done
+
+	return 1
+}
+
+pretty(){
+	local sub
+	sub="$(pretty-guess "$@")"
+	if [ -z "$sub" ]; then
+		echo "Unable to guess filetype for pretty output" >&2
+		return 1
+	fi
+	pretty-$sub "$@"
+}
