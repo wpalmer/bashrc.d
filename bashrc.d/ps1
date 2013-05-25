@@ -1,0 +1,14 @@
+PS1_host_color="0"
+PS1_user_root_color="1;37"
+PS1_hostname='\h'
+
+__PS1_prompt_command(){
+	local user_color="$PS1_user_color"
+	[ "$(whoami)" = "root" ] && user_color="$PS1_user_root_color"
+
+	local user="\[\033[${user_color}m\]\u\[\033[0m\]"
+	local tail="\[\033[${user_color}m\]\\$\[\033[0m\]"
+	local host="\[\033[${PS1_host_color}m\]$PS1_hostname\[\033[0m\]"
+	PS1="[$user@$host \W]$tail "
+}
+__poke_prompt_command ps1 __PS1_prompt_command
