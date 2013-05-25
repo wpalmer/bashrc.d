@@ -1,0 +1,29 @@
+__GO_WORKSPACE_ROOTS=(
+	$( [ -r "$HOME/.goworkspace" ] && command sed -n 's/\/\*$//p' "$HOME/.goworkspace" )
+)
+
+__AUTOGOPATH=
+__GOPATH(){
+	local gopath="$(
+		[ -r "$HOME/.goworkspace" ] &&
+			command grep -v '\/\*$' ~/.goworkspace |
+			command tr '\n' :|
+			command sed -e 's/^/:/' -e 's/::*/:/g' -e 's/:$//' -e 's/^:$//'
+	)"
+	local workspaces
+	local workspace
+
+	for workspaces in "${__GO_WORKSPACE_ROOTS[@]}"; do
+		for workspace in "$workspaces"/*; do
+			[ -d "$workspace" ] || continue
+			[ -n "$gopath" ] && gopath="$gopath:"
+			gopath="$gopath$workspace"
+		done
+	done
+
+	[ -n "$__FORCEGOPATH" -o "$GOPATH" = "$__AUTOGOPATH" ] && export GOPATH="$gopath"
+	__AUTOGOPATH="$gopath"
+}
+
+__FORCEGOPATH=1 __GOPATH
+__poke_prompt_command gopath __GOPATH
