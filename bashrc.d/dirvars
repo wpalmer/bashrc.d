@@ -1,0 +1,226 @@
+#!/bin/bash
+__dirvar_keys=()
+__dirvars=()
+function __poke_dirvar(){
+	local section=
+	local var=
+	local val=
+
+	if [ $# -eq 2 ]; then
+		var="$1"
+		val="$2"
+	else
+		section="$1"
+		var="$2"
+		val="$3"
+	fi
+
+	local offset="$(__peek_dirvar_offset "$section" "$var")"
+	[ -z "$offset" ] && offset="${#__dirvar_keys[@]}"
+
+	__dirvar_keys[$offset]="$section // $var"
+	__dirvars[$offset]="$val"
+	return 0
+}
+
+function __peek_dirvar_offset(){
+	local section="$1"
+	local var="$2"
+	local i=0;
+	while [ $i -lt ${#__dirvar_keys[@]} ]; do
+		if [ "${__dirvar_keys[$i]}" = "$section // $var" ]; then
+			echo "$i"
+			return 0
+		fi
+		i=$(( $i + 1 ))
+	done
+	return 1
+}
+
+function __peek_dirvar(){
+	local section=
+	local var=
+
+	if [ $# -eq 1 ]; then
+		var="$1"
+	else
+		section="$1"
+		var="$2"
+	fi
+
+	local i="$(__peek_dirvar_offset "$section" "$var")"
+
+	[ -z "$i" ] && return 1
+	echo "${__dirvars[$i]}"
+	return 0
+}
+
+function __dirvar_strip(){
+	local var="$1"
+	while [ "$var" != "${var//\/\///}" ]; do
+		var="${var//\/\///}"
+	done
+
+	echo "$var"
+	return 0
+}
+
+function __expand_dirvar(){
+	local unexpanded=
+	local section=
+
+	if [ $# -eq 2 ]; then
+		section="$1"
+		unexpanded="$2"
+	else
+		unexpanded="$1"
+	fi
+
+	unexpanded="${unexpanded/#~/$HOME}"
+	if [ "$unexpanded" = "${unexpanded/$/}" ]; then
+		__dirvar_strip "$unexpanded"
+		return 0
+	fi
+
+	local expand="${unexpanded#*$}"
+	expand="${expand%%/*}"
+	expand="${expand%%.*}"
+	expand="${expand%% *}"
+	expand="${expand%%	*}"
+
+	if [ -z "$section" ]; then
+		expanded="$(__peek_dirvar "$expand")"
+	else
+		expanded="$(__peek_dirvar "$section" "$expand" || __peek_dirvar "" "$expand")"
+	fi
+	expand="\$$expand"
+	expanded="${unexpanded/$expand/$expanded}"
+	__dirvar_strip "$expanded"
+	return 0
+}
+
+function __get_dirvar_sections(){
+	local i=0;
+	local candidate=
+	local previous=
+	local pwd="$(pwd)"
+	printf '\0'
+	while [ $i -lt ${#__dirvar_keys[@]} ]; do
+		candidate="${__dirvar_keys[$i]% //*}"
+		if [ "$candidate" != "$previous" ]; then
+			if [ "$pwd" = "$candidate" -o "${pwd#$candidate\/}" != "$pwd" ]; then
+				printf '%s\0' "$candidate"
+			fi
+			previous="$candidate"
+		fi
+		i=$(( $i + 1 ))
+	done
+
+	return 0
+}
+
+function __get_dirvar_section(){
+	local dirvar_section
+	while read -d $'\0' -r dirvar_section; do
+		printf '%s\n' "$dirvar_section"
+		return 0
+	done < <(__get_dirvar_sections)
+
+	echo ''
+	return 0
+}
+
+function __parse_dirvar_ini(){
+	local ini="$1"
+	local section=
+	local line=
+	local var=
+	local val=
+	local oldval=
+
+	while read line; do
+		[ -z "$line" ] && continue;
+		[ "$line" != "${line#;}" ] && continue;
+
+		if [ "$line" != "${line#[}" -a "$line" != "${line%]}" ]; then
+			section="${line#[}"
+			section="${section%]}"
+
+			[ "$section" = "global" ] && section=''
+			section="$(__expand_dirvar "$section")"
+			continue
+		fi
+
+		if [ "$line" != "${line/=/}" ]; then
+			var="${line%%=*}"
+			val="${line#*=}"
+			val="$(__expand_dirvar "$section" "$val")"
+
+			if [ "${var#\?}" != "$var" ]; then
+				var="${var#\?}"
+				[ ! -d "$val" ] && continue
+			fi
+			if [ "${var#!}" != "$var" ]; then
+				var="${var#!}"
+				if [ -z "$section" ]; then
+					oldval="$(__peek_dirvar "$var")"
+				else
+					oldval="$(__peek_dirvar "$section" "$var" || __peek_dirvar "$var")"
+				fi
+				[ -n "$oldval" -a -d "$oldval" ] && continue
+			fi
+			if [ "${var#\?}" != "$var" ]; then
+				var="${var#\?}"
+				[ ! -d "$val" ] && continue
+			fi
+
+			__poke_dirvar "$section" "$var" "$val"
+			continue
+		fi
+	done < <(
+		sed \
+			-e 's/^\s*//;s/\s*$//;/^$/d' \
+			-e '/^\[.*\]$/{ s/^\[\s*/[/;s/\s*\]$/]/; }' \
+			-e '/^\[.*\]$/!{ s/\s*=\s*/=/; }' \
+			"$ini"
+	)
+}
+
+__current_dirvar_section="//NOSECTION//"
+function __active_dirvar_section(){
+	git help >/dev/null 2>&1 && git="$(git rev-parse --git-dir 2>/dev/null)"
+
+	local dirvar_section
+	while read -d $'\0' -r dirvar_section; do
+		[ "$__current_dirvar_section" = "$dirvar_section" ] && continue
+		__current_dirvar_section="$dirvar_section"
+
+		local dirvar_key
+		local dirvar_var
+		local dirvar_val
+		local dirvar_esc="'\''"
+		local dirvar_i=0
+
+		while [ $dirvar_i -lt ${#__dirvar_keys[@]} ]; do
+			dirvar_key="${__dirvar_keys[$dirvar_i]}"
+			if [ "${dirvar_key%% // *}" = "$dirvar_section" -o "${dirvar_key%% // *}" = "" ]; then
+				dirvar_var="${dirvar_key#* // }"
+				dirvar_val="${__dirvars[$dirvar_i]}"
+				dirvar_val="${dirvar_val//\'/$dirvar_esc}"
+				eval "${dirvar_var}='${dirvar_val}'"
+			fi
+			dirvar_i=$(( $dirvar_i + 1 ))
+		done
+	done < <(__get_dirvar_sections)
+	return 0
+}
+
+function dirvar_reparse(){
+	__dirvar_keys=()
+	__dirvars=()
+	[ -r /etc/dirvars ] && __parse_dirvar_ini /etc/dirvars
+	[ -r ~/.dirvars ] && __parse_dirvar_ini ~/.dirvars
+}
+
+__poke_prompt_command "dirvars" '__active_dirvar_section'
+dirvar_reparse
