@@ -1,0 +1,1 @@
+hash dircolors 2>/dev/null && eval "$(dircolors -b)"
