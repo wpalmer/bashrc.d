@@ -1,4 +1,4 @@
-function remote(){
+function bashrc.d_remote_remote(){
 	local remote="$1"; shift;
 
 	if [ $# -gt 0 ]; then
@@ -8,17 +8,17 @@ function remote(){
 	fi
 }
 
-function remote_sudo(){
+function bashrc.d_remote_sudo(){
 	local remote="$1"; shift;
 
 	if [ $# -gt 0 ]; then
-		remote "$remote" -t sudo -i "$@"
+		bashrc.d_remote_remote "$remote" -t sudo -i "$@"
 	else
-		remote_sudo "$remote" screen -A -x -RR
+		bashrc.d_remote_sudo "$remote" screen -A -x -RR
 	fi
 }
 
-function remote_alias(){
+function bashrc.d_remote_alias(){
 	local alias="$1"; shift
 	local host
 	if [ $# -lt 1 ]; then
@@ -27,10 +27,10 @@ function remote_alias(){
 		host="$1"
 	fi
 
-	eval function "$alias(){ remote $host \"\$@\"; }"
+	eval function "$alias(){ bashrc.d_remote_remote $host \"\$@\"; }"
 }
 
-function remote_sudo_alias(){
+function bashrc.d_remote_sudo-alias(){
 	local alias="$1"; shift
 	local host
 	if [ $# -lt 1 ]; then
@@ -39,11 +39,11 @@ function remote_sudo_alias(){
 		host="$1"
 	fi
 
-	eval function "$alias(){ remote_sudo $host \"\$@\"; }"
+	eval function "$alias(){ bashrc.d_remote_sudo $host \"\$@\"; }"
 }
 
 # prepare command to pass safely across a channel which does not split arguments
-remotify(){
+bashrc.d_remote_remotify(){
 	local base64=
 	local arguments=
 	if [ $# -gt 0 ]; then
@@ -65,3 +65,5 @@ COMMAND
 	fi
 	echo "bash -c 'eval \"\$(echo -n '$base64'|gzip -d -c|base64 -d)\"'"
 }
+
+remotify(){ bashrc.d_remote_remotify "$@"; }
