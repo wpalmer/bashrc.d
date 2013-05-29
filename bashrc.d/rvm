@@ -1,4 +1,4 @@
-function rvm_init(){
+function bashrc.d_rvm_init(){
 	[ -d "$HOME/.rvm/bin" ] && PATH="$PATH:$HOME/.rvm/bin"
 	[ -s "$HOME/.rvm/scripts/rvm" ] && . "$HOME/.rvm/scripts/rvm"
 }
