@@ -1,0 +1,386 @@
+BASHRCD_PATH="${BASHRCD_PATH:-/etc/bashrc.d:~/.bashrc.d}"
+
+# Load a bashrc.d component (once), display profiling statistics, etc
+bashrc.d(){
+	local arg
+	local USAGE="$(sed 's/^..//' <<USAGE
+		bashc.d (<component> <action> | --help)
+
+		core actions:
+			PATH			manipulate PATH variables
+			list			show available components
+			load [<component>]	load <component> (or all), if not already loaded
+USAGE
+	)"
+
+	local component
+	while [ $# -gt 0 ]; do
+		arg="$1"; shift
+
+		case "$arg" in
+			--help|-h|help)
+				echo "$USAGE"
+				return
+				;;
+			-*)
+				echo "$USAGE" >&2
+				return 1
+				;;
+			*)
+				if [ -z "$component" ]; then
+					if bashrc.d_core_-is-loaded "$arg" || bashrc.d_core_load "$arg"; then
+						component="$arg"
+					else
+						return 1
+					fi
+				elif [ "$arg" = "noop" ]; then
+					true
+				elif [ "$(type -t "bashrc.d_${component}_${arg}")" = "function" ]; then
+					"bashrc.d_${component}_${arg}" "$@"
+					return "$?"
+				elif [ "$(type -t "bashrc.d_${component}")" = "function" ]; then
+					"bashrc.d_${component}" "${arg}" "$@"
+					return "$?"
+				else
+					echo "unknown command '$component' '$arg'" >&2
+					echo "$USAGE" >&2
+					return 1
+				fi
+				;;
+		esac
+	done
+
+	echo "$USAGE" >&2
+	return 1
+}
+
+bashrc.d_core_-is-loaded(){
+	[ "$1" = "core" ] && return 0
+
+	local component="$1"
+	local loaded="$(builtin printf ':%s:' "${__BASHRCD_LOADED[@]}")"
+	[ -n "$loaded" -a -z "${loaded//*:$component:*/}" ]
+}
+
+bashrc.d_core_-forget-is-loaded(){
+	local OIFS;
+	local loaded
+	local component
+
+	loaded="$(builtin printf ':%s:' "${__BASHRCD_LOADED[@]}")"
+	for component in "$@"; do
+		bashrc.d_core_-is-loaded "$component" || continue
+
+		loaded="${loaded//:$component:/::}"
+		loaded="${loaded//::/:}"
+		loaded="${loaded//::/:}"
+	done
+
+	loaded="${loaded%:}"
+	loaded="${loaded#:}"
+	OIFS="$IFS"
+	IFS=':'
+	__BASHRCD_LOADED=( $loaded )
+	IFS="$OIFS"
+}
+
+bashrc.d_core_PATH(){
+	local USAGE="$(sed 's/^..//' <<USAGE
+		usage: bashrc.d core PATH [--PATH=<PATH>] <entry> [<entry>...]
+
+		Create a PATH variable by concatenating <entry>s using the PATH separator.
+
+		example: PATH="\$(bashrc.d core mkPATH --PATH="\$PATH" --prefix ~/bin)"
+
+		options:
+			--PATH=<PATH>	add entries to <PATH>
+			--prefix	add entries to the beginning of <PATH>
+			--suffix	add entries to the end of <PATH>
+			-f		validate/expand all entries into full directories
+			-z		output entries terminated by NUL bytes, rather than as a PATH
+			--help		display this message and return
+USAGE
+	)"
+
+	local arg
+	local do_prefix=0
+	local do_suffix=1
+	local do_expand=0
+	local z=0
+	local path=()
+	local path_prefix=()
+	local path_suffix=()
+	local entry
+	local OIFS="$IFS"
+	while [ $# -gt 0 ]; do
+		arg="$1"; shift
+
+		case "$arg" in
+			--PATH=*|--path=*)
+				IFS=:
+				for entry in ${arg#*=}; do
+					path[${#path[@]}]="$entry"
+				done
+				IFS="$OIFS"
+
+				;;
+			--prefix)
+				do_prefix=1
+				do_suffix=0
+				;;
+			--suffix)
+				do_prefix=0
+				do_suffix=1
+				;;
+			-f)
+				do_expand=1
+				;;
+			-z)
+				z=1
+				;;
+			--help)
+				echo "$USAGE"
+				return
+				;;
+			-*)
+				echo "Unknown argument '$arg'" >&2
+				echo
+				echo "$USAGE" >&2
+				return 1
+				;;
+			*)
+				[ "$do_prefix" = "1" ] && path_prefix[${#path_prefix[@]}]="$arg"
+				[ "$do_suffix" = "1" ] && path_suffix[${#path_suffix[@]}]="$arg"
+				;;
+		esac
+	done
+
+	path=( "${path_prefix[@]}" "${path[@]}" "${path_suffix[@]}" )
+
+	local expanded=()
+	if [ $do_expand -eq 1 ]; then
+		for entry in "${path[@]}"; do
+			eval entry="$(builtin printf '%q' "$entry")"
+			entry="$(readlink -f "$entry")"
+			[ -d "$entry" ] || continue
+			expanded[${#expanded[@]}]="$entry"
+		done
+		path=( "${expanded[@]}" )
+	fi
+
+	if [ "$z" = "1" ]; then
+		printf '%s\0' "${path[@]}"
+	else
+		local first=1
+		for entry in "${path[@]}"; do
+			[ "$first" = "0" ] && printf '%s' ':'
+			printf '%s' "$entry"
+			first=0
+		done
+		[ "$first" = "0" ] && echo
+	fi
+
+	return 0
+}
+
+bashrc.d_core_list(){
+	local USAGE="$(sed 's/^..//' <<USAGE
+		usage: bashrc.d core list [-z] [<prefix>]
+
+		options:
+			--help		display this message and return
+			-z		output terminated by NUL byte, rather than newlines
+			<pattern>	limit output to entries matching find-style fnmatch(2) <pattern>
+USAGE
+	)"
+
+	local arg
+	local do_full=0
+	local patterns=()
+	local terminator='\n'
+	local z=()
+	while [ $# -gt 0 ]; do
+		arg="$1"; shift
+
+		case "$arg" in
+			-f|--full-paths)
+				do_full=1
+				;;
+			-z)
+				terminator='\0'
+				z=( '-z' )
+				;;
+			--help)
+				echo "$USAGE"
+				return
+				;;
+			*)
+				patterns[${#patterns[@]}]=-o
+				patterns[${#patterns[@]}]=-name
+				patterns[${#patterns[@]}]="$arg"
+				;;
+		esac
+	done
+
+	if [ ${#patterns[@]} -gt 0 ]; then
+		patterns=( -a '(' -false "${patterns[@]}" ')' )
+	fi
+
+	local path=()
+	local entry
+	while read -d $'\0' -r entry; do
+		[ -d "$entry" ] || continue
+		path[${#path[@]}]="$entry"
+	done < <( bashrc.d_core_PATH --PATH="$BASHRCD_PATH" -f -z )
+
+	local path
+	local component
+	local output=component
+	[ $do_full -eq 1 ] && output=path
+	find "${path[@]}" -maxdepth 1 \
+		-type f \
+		-regextype posix-basic -regex '.*/[-A-Za-z0-9][-A-Za-z0-9]*' \
+		-not '(' -name 'core' -o -name '.*' -o -name '_*' ')' \
+		"${patterns[@]}" \
+		-printf "%p\0" |
+	awk '
+		BEGIN{ RS="\0"; ORS="'"$terminator"'"; }
+		{
+			path=$0;
+			component=path;
+			sub(/^.*\//, "", component);
+
+			if( !components[ component ] ){
+				components[ component ] = path;
+				print '"$output"';
+			}
+		}
+	'
+}
+
+__BASHRCD_LOADED=()
+__BASHRCD_PROFILE=()
+bashrc.d_core_load(){
+	local USAGE="$(sed 's/^..//' <<USAGE
+		usage: bashrc.d core load [-f] [-v] [<component>]
+USAGE
+	)"
+	local components=()
+	local do_verbose=0
+	local do_profile=0
+	local do_force=0
+	local arg
+	while [ $# -gt 0 ]; do
+		arg=$1; shift
+
+		case "$arg" in
+			-v|--verbose)
+				do_verbose=1
+				;;
+			-f|--force)
+				do_force=1
+				;;
+			--profile)
+				do_profile=1
+				;;
+			--help)
+				echo "$USAGE"
+				return
+				;;
+			-*)
+				echo "Unknown argument '$arg'" >&2
+				echo
+				echo "$USAGE" >&2
+				return 1
+				;;
+			*)
+				components[${#components[@]}]="$arg"
+				;;
+		esac
+	done
+
+	local component
+	local component_path
+	local component_paths=()
+
+	while read -d $'\0' -r component_path; do
+		component="${component_path##*/}"
+		found[${#found[@]}]="$component"
+
+		component_paths[${#component_paths[@]}]="$component_path"
+	done < <( bashrc.d_core_list -f -z "${components[@]}" )
+
+	if [ ${#components[@]} -gt 0 -a ${#found[@]} -ne ${#components[@]} ]; then
+		local candidate
+		for component in "${components[@]}"; do
+			for candidate in "${found[@]}"; do
+				[ "$component" = "$candidate" ] && continue 2
+			done
+
+			echo "Unknown component '$component'" >&2
+			return 1
+		done
+	fi
+
+	if [ $do_force -eq 1 ]; then
+		bashrc.d_core_-forget-is-loaded "${component_paths[@]##*/}"
+	fi
+
+	local profile_begin
+	local profile_end
+	local profile_inner_begin
+	local profile_inner_end
+	for component_path in "${component_paths[@]}"; do
+		[ $do_profile -eq 1 ] && profile_begin="$(date +'%s%N')"
+
+		component="${component_path##*/}"
+		bashrc.d_core_-is-loaded "$component" && continue
+
+		[ $do_verbose -eq 1 ] && echo "Loading '$component'" >&2
+		[ $do_profile -eq 1 ] && profile_inner_begin="$(date +'%s%N')"
+		. "$component_path"
+		[ $do_profile -eq 1 ] && profile_inner_end="$(date +'%s%N')"
+
+		__BASHRCD_LOADED[${#__BASHRCD_LOADED[@]}]="$component"
+
+		if [ $do_profile -eq 1 ]; then
+			profile_end="$(date +'%s%N')"
+			__BASHRCD_PROFILE[${#__BASHRCD_PROFILE[@]}]="$component"
+			__BASHRCD_PROFILE[${#__BASHRCD_PROFILE[@]}]="$(( profile_end - profile_begin ))"
+			__BASHRCD_PROFILE[${#__BASHRCD_PROFILE[@]}]="$(( profile_inner_end - profile_inner_begin ))"
+		fi
+	done
+}
+
+bashrc.d_core_profile(){
+	local component
+	local timing
+	local timing_inner
+	local part
+	for part in "${__BASHRCD_PROFILE[@]}"; do
+		[ -z "$component" ] && component="$part" && continue
+		[ -z "$timing" ] && timing="$part" && continue
+		timing_inner="$part"
+
+		printf '%s\t%s\t%s\n' "$timing" "$timing_inner" "$component"
+		component=
+		timing=
+	done | sort -n | awk '
+		BEGIN{
+			total=0.0;
+			total_inner=0.0;
+			scaler=1000000000;
+		}
+		{
+			total += $1;
+			total_inner += $2;
+			printf "%.5f %.5f %.5f %s\n", ($1/scaler), (($1 - $2)/scaler), ($2/scaler), $3;
+		}
+		END{
+			printf "%.5f %.5f %s\n",
+				(total/scaler),
+				((total - total_inner)/scaler),
+				(total_inner/scaler),
+				"TOTAL";
+		}'
+}
