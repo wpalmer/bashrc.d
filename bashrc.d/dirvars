@@ -222,5 +222,5 @@ function dirvar_reparse(){
 	[ -r ~/.dirvars ] && __parse_dirvar_ini ~/.dirvars
 }
 
-__poke_prompt_command "dirvars" '__active_dirvar_section'
+bashrc.d prompt-command poke "dirvars" '__active_dirvar_section'
 dirvar_reparse

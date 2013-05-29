@@ -6,7 +6,7 @@ function __title(){
 
 case "$TERM" in
 	xterm*|rxvt*|screen)
-		__poke_prompt_command title __title
+		bashrc.d prompt-command poke title __title
 		;;
 	*)
 		;;

@@ -11,4 +11,4 @@ __PS1_prompt_command(){
 	local host="\[\033[${PS1_host_color}m\]$PS1_hostname\[\033[0m\]"
 	PS1="[$user@$host \W]$tail "
 }
-__poke_prompt_command ps1 __PS1_prompt_command
+bashrc.d prompt-command poke ps1 __PS1_prompt_command

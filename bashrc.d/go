@@ -26,4 +26,4 @@ __GOPATH(){
 }
 
 __FORCEGOPATH=1 __GOPATH
-__poke_prompt_command gopath __GOPATH
+bashrc.d prompt-command poke gopath __GOPATH
