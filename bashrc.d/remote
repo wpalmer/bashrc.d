@@ -63,7 +63,7 @@ COMMAND
 	else
 		base64="$(gzip -c|base64 -w 0)"
 	fi
-	echo "bash -c 'eval \"\$(echo -n '$base64'|gzip -d -c|base64 -d)\"'"
+	echo "bash -c 'eval \"\$(echo -n '$base64'|base64 -d|gzip -d -c)\"'"
 }
 
 remotify(){ bashrc.d_remote_remotify "$@"; }
