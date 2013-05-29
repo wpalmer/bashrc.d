@@ -3,7 +3,7 @@ __GO_WORKSPACE_ROOTS=(
 )
 
 __AUTOGOPATH=
-__GOPATH(){
+bashrc.d_go_set-gopath(){
 	local gopath="$(
 		[ -r "$HOME/.goworkspace" ] &&
 			command grep -v '\/\*$' ~/.goworkspace |
@@ -25,5 +25,5 @@ __GOPATH(){
 	__AUTOGOPATH="$gopath"
 }
 
-__FORCEGOPATH=1 __GOPATH
-bashrc.d prompt-command poke gopath __GOPATH
+__FORCEGOPATH=1 bashrc.d_go_set-gopath
+bashrc.d prompt-command poke bashrc.d_go_set-gopath
