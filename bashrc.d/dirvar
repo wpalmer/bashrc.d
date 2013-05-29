@@ -1,7 +1,7 @@
 #!/bin/bash
 __dirvar_keys=()
 __dirvars=()
-function __poke_dirvar(){
+function bashrc.d_dirvar_poke(){
 	local section=
 	local var=
 	local val=
@@ -15,7 +15,7 @@ function __poke_dirvar(){
 		val="$3"
 	fi
 
-	local offset="$(__peek_dirvar_offset "$section" "$var")"
+	local offset="$(bashrc.d_dirvar_peek-offset "$section" "$var")"
 	[ -z "$offset" ] && offset="${#__dirvar_keys[@]}"
 
 	__dirvar_keys[$offset]="$section // $var"
@@ -23,7 +23,7 @@ function __poke_dirvar(){
 	return 0
 }
 
-function __peek_dirvar_offset(){
+function bashrc.d_dirvar_peek-offset(){
 	local section="$1"
 	local var="$2"
 	local i=0;
@@ -37,7 +37,7 @@ function __peek_dirvar_offset(){
 	return 1
 }
 
-function __peek_dirvar(){
+function bashrc.d_dirvar_peek(){
 	local section=
 	local var=
 
@@ -48,14 +48,14 @@ function __peek_dirvar(){
 		var="$2"
 	fi
 
-	local i="$(__peek_dirvar_offset "$section" "$var")"
+	local i="$(bashrc.d_dirvar_peek-offset "$section" "$var")"
 
 	[ -z "$i" ] && return 1
 	echo "${__dirvars[$i]}"
 	return 0
 }
 
-function __dirvar_strip(){
+function bashrc.d_dirvar_-strip(){
 	local var="$1"
 	while [ "$var" != "${var//\/\///}" ]; do
 		var="${var//\/\///}"
@@ -65,7 +65,7 @@ function __dirvar_strip(){
 	return 0
 }
 
-function __expand_dirvar(){
+function bashrc.d_dirvar_expand(){
 	local unexpanded=
 	local section=
 
@@ -78,7 +78,7 @@ function __expand_dirvar(){
 
 	unexpanded="${unexpanded/#~/$HOME}"
 	if [ "$unexpanded" = "${unexpanded/$/}" ]; then
-		__dirvar_strip "$unexpanded"
+		bashrc.d_dirvar_-strip "$unexpanded"
 		return 0
 	fi
 
@@ -89,17 +89,17 @@ function __expand_dirvar(){
 	expand="${expand%%	*}"
 
 	if [ -z "$section" ]; then
-		expanded="$(__peek_dirvar "$expand")"
+		expanded="$(bashrc.d_dirvar_peek "$expand")"
 	else
-		expanded="$(__peek_dirvar "$section" "$expand" || __peek_dirvar "" "$expand")"
+		expanded="$(bashrc.d_dirvar_peek "$section" "$expand" || bashrc.d_dirvar_peek "" "$expand")"
 	fi
 	expand="\$$expand"
 	expanded="${unexpanded/$expand/$expanded}"
-	__dirvar_strip "$expanded"
+	bashrc.d_dirvar_-strip "$expanded"
 	return 0
 }
 
-function __get_dirvar_sections(){
+function bashrc.d_dirvar_list-sections(){
 	local i=0;
 	local candidate=
 	local previous=
@@ -119,18 +119,7 @@ function __get_dirvar_sections(){
 	return 0
 }
 
-function __get_dirvar_section(){
-	local dirvar_section
-	while read -d $'\0' -r dirvar_section; do
-		printf '%s\n' "$dirvar_section"
-		return 0
-	done < <(__get_dirvar_sections)
-
-	echo ''
-	return 0
-}
-
-function __parse_dirvar_ini(){
+function bashrc.d_dirvar_parse-ini(){
 	local ini="$1"
 	local section=
 	local line=
@@ -147,14 +136,14 @@ function __parse_dirvar_ini(){
 			section="${section%]}"
 
 			[ "$section" = "global" ] && section=''
-			section="$(__expand_dirvar "$section")"
+			section="$(bashrc.d_dirvar_expand "$section")"
 			continue
 		fi
 
 		if [ "$line" != "${line/=/}" ]; then
 			var="${line%%=*}"
 			val="${line#*=}"
-			val="$(__expand_dirvar "$section" "$val")"
+			val="$(bashrc.d_dirvar_expand "$section" "$val")"
 
 			if [ "${var#\?}" != "$var" ]; then
 				var="${var#\?}"
@@ -163,9 +152,9 @@ function __parse_dirvar_ini(){
 			if [ "${var#!}" != "$var" ]; then
 				var="${var#!}"
 				if [ -z "$section" ]; then
-					oldval="$(__peek_dirvar "$var")"
+					oldval="$(bashrc.d_dirvar_peek "$var")"
 				else
-					oldval="$(__peek_dirvar "$section" "$var" || __peek_dirvar "$var")"
+					oldval="$(bashrc.d_dirvar_peek "$section" "$var" || bashrc.d_dirvar_peek "$var")"
 				fi
 				[ -n "$oldval" -a -d "$oldval" ] && continue
 			fi
@@ -174,7 +163,7 @@ function __parse_dirvar_ini(){
 				[ ! -d "$val" ] && continue
 			fi
 
-			__poke_dirvar "$section" "$var" "$val"
+			bashrc.d_dirvar_poke "$section" "$var" "$val"
 			continue
 		fi
 	done < <(
@@ -187,7 +176,7 @@ function __parse_dirvar_ini(){
 }
 
 __current_dirvar_section="//NOSECTION//"
-function __active_dirvar_section(){
+function bashrc.d_dirvar_active-section(){
 	git help >/dev/null 2>&1 && git="$(git rev-parse --git-dir 2>/dev/null)"
 
 	local dirvar_section
@@ -211,16 +200,16 @@ function __active_dirvar_section(){
 			fi
 			dirvar_i=$(( $dirvar_i + 1 ))
 		done
-	done < <(__get_dirvar_sections)
+	done < <(bashrc.d_dirvar_list-sections)
 	return 0
 }
 
-function dirvar_reparse(){
+function bashrc.d_dirvar_reparse(){
 	__dirvar_keys=()
 	__dirvars=()
-	[ -r /etc/dirvars ] && __parse_dirvar_ini /etc/dirvars
-	[ -r ~/.dirvars ] && __parse_dirvar_ini ~/.dirvars
+	[ -r /etc/dirvars ] && bashrc.d_dirvar_parse-ini /etc/dirvars
+	[ -r ~/.dirvars ] && bashrc.d_dirvar_parse-ini ~/.dirvars
 }
 
-bashrc.d prompt-command poke "dirvars" '__active_dirvar_section'
-dirvar_reparse
+bashrc.d prompt-command poke dirvar bashrc.d_dirvar_active-section
+bashrc.d_dirvar_reparse
