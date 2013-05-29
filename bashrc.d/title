@@ -1,5 +1,5 @@
 function __title(){
-	local pwd="$(__peek_pwd_alias "$PWD")"
+	local pwd="$(bashrc.d pwd-alias peek "$PWD")"
 	local title="$(whoami)@$HOSTNAME: $pwd"
 	echo -ne "\033]0;$title\007"
 }

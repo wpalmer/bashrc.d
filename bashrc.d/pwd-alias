@@ -3,7 +3,7 @@
 #
 # Example:
 # /home/me: Home
-function __peek_pwd_alias(){
+function bashrc.d_pwd-alias_peek(){
 	local pwd="$1"
 	local pwd_tilda="${pwd/#$HOME/~}"
 	local mapping
