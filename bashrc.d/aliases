@@ -100,6 +100,8 @@ gcommands=(
 )
 
 for command in "${gcommands[@]}"; do
+	[ "$(type -t "$command")" = "builtin" ] && continue
+
 	if which g$command >/dev/null 2>&1; then
 		eval "function $command(){ command g$command \"\$@\"; }"
 	fi
