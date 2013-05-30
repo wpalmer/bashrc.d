@@ -26,6 +26,10 @@ USAGE
 				echo "$USAGE" >&2
 				return 1
 				;;
+			load)
+				"bashrc.d_core_${arg}" "$@"
+				return "$?"
+				;;
 			*)
 				if [ -z "$component" ]; then
 					if bashrc.d_core_-is-loaded "$arg" || bashrc.d_core_load "$arg"; then
@@ -267,7 +271,7 @@ USAGE
 	[ $do_full -eq 1 ] && output=path
 	find -L "${path[@]}" -maxdepth 1 \
 		-type f \
-		-not '(' -name 'core' -o -name '.*' -o -name '_*' ')' \
+		-not '(' -name 'core' -o -name 'load' -o -name '.*' -o -name '_*' ')' \
 		"${patterns[@]}" \
 		-print0 |
 	xargs -0 awk '
