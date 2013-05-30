@@ -1,4 +1,5 @@
 [ -n "$BASHRC_ONCE" ] && return || BASHRC_ONCE=1
-[ -z "$PS1" ] && return
 . ~/git/bashrc/bashrcd
+
+[ -z "$PS1" ] && bashrc.d core load path && return
 bashrc.d core load
