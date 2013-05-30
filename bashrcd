@@ -257,24 +257,29 @@ USAGE
 	local component
 	local output=component
 	[ $do_full -eq 1 ] && output=path
-	find "${path[@]}" -maxdepth 1 \
+	find -L "${path[@]}" -maxdepth 1 \
 		-type f \
-		-regextype posix-basic -regex '.*/[-A-Za-z0-9][-A-Za-z0-9]*' \
 		-not '(' -name 'core' -o -name '.*' -o -name '_*' ')' \
 		"${patterns[@]}" \
-		-printf "%p\0" |
-	awk '
-		BEGIN{ RS="\0"; ORS="'"$terminator"'"; }
-		{
-			path=$0;
+		-print0 |
+	xargs -0 awk '
+		BEGIN{for(i = 1; i < ARGC; i++){
+			path=ARGV[i];
+			if( !match(path, /(^|\/)[-A-Za-z0-9][-A-Za-z0-9]*$/) ) continue;
 			component=path;
 			sub(/^.*\//, "", component);
 
 			if( !components[ component ] ){
 				components[ component ] = path;
-				print '"$output"';
+				if( length("'"$terminator"'") ){
+					printf("%s'"$terminator"'", '"$output"');
+					continue;
+				}
+
+				printf "%s", '"$output"';
+				system("printf \"\\0\"");
 			}
-		}
+		}}
 	'
 }
 
