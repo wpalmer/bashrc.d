@@ -1,0 +1,138 @@
+bashrc.d_associative_length(){
+	local var="$1"
+	local length
+	eval 'length=${#__BASHRCD_ASSOCIATIVE_KEYS_'"$var"'[@]}'
+	printf '%s\n' "$length"
+}
+
+bashrc.d_associative_poke(){
+	local var="$1"
+	local key="$2"
+	local value="$3"
+	local offset="$(bashrc.d_associative_peek-offset "$var" "$key")"
+	[ -z "$offset" ] && offset="$(bashrc.d_associative_length "$var")"
+
+	eval "__BASHRCD_ASSOCIATIVE_KEYS_${var}[$offset]=$(builtin printf '%q' "$key")"
+	eval "__BASHRCD_ASSOCIATIVE_VALUES_${var}[$offset]=$(builtin printf '%q' "$value")"
+	return 0
+}
+
+bashrc.d_associative_unset(){
+	local var="$1"
+
+	[ $# -eq 1 ] && {
+		unset -v "__BASHRCD_ASSOCIATIVE_KEYS_$var" "__BASHRCD_ASSOCIATIVE_VALUES_$var"
+		return 0
+	}
+
+	local key="$2"
+
+	local keys=()
+	local values=()
+	local i=0;
+	set -x
+	local length="$(bashrc.d_associative_length "$var")"
+	local candidate
+	while [ $i -lt $length ]; do
+		eval 'candidate=${__BASHRCD_ASSOCIATIVE_KEYS_'"$var"'['"$i"']}'
+		if [ "$candidate" != "$key" ]; then
+			keys[$i]="$candidate"
+			eval 'values[$i]=${__BASHRCD_ASSOCIATIVE_VALUES_'"$var"'['"$i"']}'
+		fi
+		i=$(( $i + 1 ))
+	done
+	set +x
+
+	eval "__BASHRCD_ASSOCIATIVE_KEYS_${var}=( \"\${keys[@]}\" )"
+	eval "__BASHRCD_ASSOCIATIVE_KEYS_${var}=( \"\${values[@]}\" )"
+	return 0
+}
+
+bashrc.d_associative_peek-offset(){
+	local var="$1"
+	local key="$2"
+
+	local i=0;
+	local length="$(bashrc.d_associative_length "$var")"
+	local candidate
+	while [ $i -lt $length ]; do
+		eval 'candidate=${__BASHRCD_ASSOCIATIVE_KEYS_'"$var"'['"$i"']}'
+		[ "$candidate" = "$key" ] && builtin printf '%s\n' "$i" && return 0
+		i=$(( $i + 1 ))
+	done
+	return 1
+}
+
+bashrc.d_associative_peek(){
+	local var="$1"
+	local key="$2"
+	local offset="$(bashrc.d_associative_peek-offset "$var" "$key")"
+	local value
+
+	[ -z "$offset" ] && return 1
+	eval 'value=${__BASHRCD_ASSOCIATIVE_VALUES_'"$var"'['"$offset"']}'
+	builtin printf '%s\n' "$value"
+}
+
+bashrc.d_associative_peek-by-prefix(){
+	local var="$1"
+	local key="$2"
+
+	local i=0;
+	local length="$(bashrc.d_associative_length "$var")"
+	local candidate
+	local value
+	local rc=1
+	while [ $i -lt $length ]; do
+		eval 'candidate=${__BASHRCD_ASSOCIATIVE_KEYS_'"$var"'['"$i"']}'
+		if [ -z "${candidate##$key*}" ]; then
+			rc=0
+			eval 'value=${__BASHRCD_ASSOCIATIVE_VALUES_'"$var"'['"$i"']}'
+			builtin printf '%s\0%s\0' "${candidate#$key}" "$value"
+		fi
+		i=$(( $i + 1 ))
+	done
+	return "$rc"
+}
+
+bashrc.d_associative_keys(){
+	local var="$1"
+
+	local i=0;
+	local length="$(bashrc.d_associative_length "$var")"
+	local key
+	while [ $i -lt $length ]; do
+		eval 'key=${__BASHRCD_ASSOCIATIVE_KEYS_'"$var"'['"$i"']}'
+		builtin printf '%s\0' "$key"
+		i=$(( $i + 1 ))
+	done
+}
+
+bashrc.d_associative_values(){
+	local var="$1"
+
+	local i=0;
+	local length="$(bashrc.d_associative_length "$var")"
+	local value
+	while [ $i -lt $length ]; do
+		eval 'value=${__BASHRCD_ASSOCIATIVE_VALUES_'"$var"'['"$i"']}'
+		builtin printf '%s\0' "$value"
+		i=$(( $i + 1 ))
+	done
+}
+
+bashrc.d_associative_inspect(){
+	local var="$1"
+	local i=0;
+	local length="$(bashrc.d_associative_length "$var")"
+	local key
+	local value
+
+	while [ $i -lt $length ]; do
+		eval 'key=${__BASHRCD_ASSOCIATIVE_KEYS_'"$var"'['"$i"']}'
+		eval 'value=${__BASHRCD_ASSOCIATIVE_VALUES_'"$var"'['"$i"']}'
+		printf '__BASHRCD_ASSOCIATIVE_KEYS_%q=%q\n' "$var" "$key"
+		printf '__BASHRCD_ASSOCIATIVE_VALUES_%q=%q\n' "$var" "$value"
+		i=$(( $i + 1 ))
+	done
+}
