@@ -96,6 +96,8 @@ bashrc.d_core_PATH(){
 			--PATH=<PATH>	add entries to <PATH>
 			--prefix	add entries to the beginning of <PATH>
 			--suffix	add entries to the end of <PATH>
+			--file=<FILE>	obtain entries from <FILE>, one per line
+			--zfile=<FILE>	obtain entries from <FILE>, one per NUL-terminated line
 			-f		validate/expand all entries into full directories
 			-z		output entries terminated by NUL bytes, rather than as a PATH
 			--help		display this message and return
@@ -131,6 +133,24 @@ USAGE
 			--suffix)
 				do_prefix=0
 				do_suffix=1
+				;;
+			--file=*)
+				eval arg="$(builtin printf '%q' "${arg#*=}")"
+				arg="$(readlink -f "$arg")" || return 1
+
+				while read entry; do
+					[ "$do_prefix" = "1" ] && path_prefix[${#path_prefix[@]}]="$entry"
+					[ "$do_suffix" = "1" ] && path_suffix[${#path_suffix[@]}]="$entry"
+				done < <( sed 's/^\s*//;s/\s*$//;/^#/d;' "$arg" )
+				;;
+			--zfile=*)
+				eval arg="$(builtin printf '%q' "${arg#*=}")"
+				arg="$(readlink -f "$arg")" || return 1
+
+				while read -d $'\0' -r entry; do
+					[ "$do_prefix" = "1" ] && path_prefix[${#path_prefix[@]}]="$entry"
+					[ "$do_suffix" = "1" ] && path_suffix[${#path_suffix[@]}]="$entry"
+				done < "$arg"
 				;;
 			-f)
 				do_expand=1
