@@ -54,6 +54,14 @@ USAGE
 	return 1
 }
 
+bashrc.d_core_-fullpath(){
+	local path="$1"
+	local pwd="$(builtin pwd -L)"
+
+	[ -z "${path##/*}" ] && builtin printf "%s\n" "$path" && return 0
+	builtin printf '%s/%s\n' "$pwd" "$path"
+}
+
 bashrc.d_core_-is-loaded(){
 	[ "$1" = "core" ] && return 0
 
@@ -136,7 +144,7 @@ USAGE
 				;;
 			--file=*)
 				eval arg="$(builtin printf '%q' "${arg#*=}")"
-				arg="$(readlink -f "$arg")" || return 1
+				arg="$(bashrc.d_core_-fullpath "$arg")" || return 1
 
 				while read entry; do
 					[ "$do_prefix" = "1" ] && path_prefix[${#path_prefix[@]}]="$entry"
@@ -145,7 +153,7 @@ USAGE
 				;;
 			--zfile=*)
 				eval arg="$(builtin printf '%q' "${arg#*=}")"
-				arg="$(readlink -f "$arg")" || return 1
+				arg="$(bashrc.d_core_-fullpath "$arg")" || return 1
 
 				while read -d $'\0' -r entry; do
 					[ "$do_prefix" = "1" ] && path_prefix[${#path_prefix[@]}]="$entry"
@@ -181,7 +189,7 @@ USAGE
 	if [ $do_expand -eq 1 ]; then
 		for entry in "${path[@]}"; do
 			eval entry="$(builtin printf '%q' "$entry")"
-			entry="$(readlink -f "$entry")"
+			entry="$(bashrc.d_core_-fullpath "$entry")"
 			[ -d "$entry" ] || continue
 			expanded[${#expanded[@]}]="$entry"
 		done
