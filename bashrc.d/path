@@ -1,0 +1,3 @@
+[ -r ~/.paths.high ] && PATH="$(bashrc.d core PATH --PATH="$PATH" --prefix --file=~/.paths.high)"
+[ -r ~/.paths.low ] && PATH="$(bashrc.d core PATH --PATH="$PATH" --suffix --file=~/.paths.low)"
+export PATH
