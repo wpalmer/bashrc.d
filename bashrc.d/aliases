@@ -99,6 +99,7 @@ gcommands=(
 	sleep
 )
 
+bashrc.d core load path
 for command in "${gcommands[@]}"; do
 	[ "$(type -t "$command")" = "builtin" ] && continue
 

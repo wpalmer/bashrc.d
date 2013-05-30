@@ -1,1 +1,2 @@
+bashrc.d core load path
 hash dircolors 2>/dev/null && eval "$(dircolors -b)"

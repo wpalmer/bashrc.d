@@ -1,3 +1,4 @@
+bashrc.d core load path
 if which keychain >/dev/null 2>&1; then
     if [ -n "$SSH_CLIENT" ]; then
         eval `keychain -q -Q`
