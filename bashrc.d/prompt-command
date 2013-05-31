@@ -1,44 +1,18 @@
-__prompt_command_keys=()
-__prompt_commands=()
 function bashrc.d_prompt-command_poke(){
-	local key="$1"
-	local command="$2"
-
-	local offset="$(bashrc.d_prompt-command_peek-offset "$key")"
-	[ -z "$offset" ] && offset="${#__prompt_command_keys[@]}"
-
-	__prompt_command_keys[$offset]="$key"
-	__prompt_commands[$offset]="$command"
-	return 0
-}
-
-function bashrc.d_prompt-command_peek-offset(){
-	local key="$1"
-	local i=0;
-	while [ $i -lt ${#__prompt_command_keys[@]} ]; do
-		if [ "${__prompt_command_keys[$i]}" = "$key" ]; then
-			echo "$i"
-			return 0
-		fi
-		i=$(( $i + 1 ))
-	done
-	return 1
+	bashrc.d associative poke prompt_command "$1" "$2"
 }
 
 function bashrc.d_prompt-command_peek(){
-	local key="$1"
-	local i="$(bashrc.d_prompt-command_peek-offset "$key")"
-	
-	[ -z "$i" ] && return 1
-	echo "${__prompt_commands[$i]}"
-	return 0
+	bashrc.d associative peek prompt_command "$1"
 }
 
 function bashrc.d_prompt-command_process(){
-	for command in "${__prompt_commands[@]}"; do
+	local command
+
+	while read -d $'\0' -r command; do
 		{
 			eval "$command"
 		}
-	done
+	done < <(bashrc.d associative values prompt_command)
 }
 PROMPT_COMMAND=bashrc.d_prompt-command_process
