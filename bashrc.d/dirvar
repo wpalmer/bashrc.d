@@ -1,6 +1,4 @@
 #!/bin/bash
-__dirvar_keys=()
-__dirvars=()
 function bashrc.d_dirvar_poke(){
 	local section=
 	local var=
@@ -15,26 +13,7 @@ function bashrc.d_dirvar_poke(){
 		val="$3"
 	fi
 
-	local offset="$(bashrc.d_dirvar_peek-offset "$section" "$var")"
-	[ -z "$offset" ] && offset="${#__dirvar_keys[@]}"
-
-	__dirvar_keys[$offset]="$section // $var"
-	__dirvars[$offset]="$val"
-	return 0
-}
-
-function bashrc.d_dirvar_peek-offset(){
-	local section="$1"
-	local var="$2"
-	local i=0;
-	while [ $i -lt ${#__dirvar_keys[@]} ]; do
-		if [ "${__dirvar_keys[$i]}" = "$section // $var" ]; then
-			echo "$i"
-			return 0
-		fi
-		i=$(( $i + 1 ))
-	done
-	return 1
+	bashrc.d associative poke dirvar "$section // $var" "$val"
 }
 
 function bashrc.d_dirvar_peek(){
@@ -48,11 +27,7 @@ function bashrc.d_dirvar_peek(){
 		var="$2"
 	fi
 
-	local i="$(bashrc.d_dirvar_peek-offset "$section" "$var")"
-
-	[ -z "$i" ] && return 1
-	echo "${__dirvars[$i]}"
-	return 0
+	bashrc.d associative peek dirvar "$section // $var"
 }
 
 function bashrc.d_dirvar_-strip(){
@@ -105,8 +80,8 @@ function bashrc.d_dirvar_list-sections(){
 	local previous=
 	local pwd="$(pwd)"
 	printf '\0'
-	while [ $i -lt ${#__dirvar_keys[@]} ]; do
-		candidate="${__dirvar_keys[$i]% //*}"
+	while read -d $'\0' -r candidate; do
+		candidate="${candidate% //*}"
 		if [ "$candidate" != "$previous" ]; then
 			if [ "$pwd" = "$candidate" -o "${pwd#$candidate\/}" != "$pwd" ]; then
 				printf '%s\0' "$candidate"
@@ -114,7 +89,9 @@ function bashrc.d_dirvar_list-sections(){
 			previous="$candidate"
 		fi
 		i=$(( $i + 1 ))
-	done
+	done < <(
+		bashrc.d associative keys dirvar
+	)
 
 	return 0
 }
@@ -190,22 +167,23 @@ function bashrc.d_dirvar_active-section(){
 		local dirvar_esc="'\''"
 		local dirvar_i=0
 
-		while [ $dirvar_i -lt ${#__dirvar_keys[@]} ]; do
-			dirvar_key="${__dirvar_keys[$dirvar_i]}"
-			if [ "${dirvar_key%% // *}" = "$dirvar_section" -o "${dirvar_key%% // *}" = "" ]; then
-				dirvar_var="${dirvar_key#* // }"
-				dirvar_val="${__dirvars[$dirvar_i]}"
-				dirvar_val="${dirvar_val//\'/$dirvar_esc}"
-				eval "${dirvar_var}='${dirvar_val}'"
-			fi
-			dirvar_i=$(( $dirvar_i + 1 ))
-		done
+		local has_var=0
+		while read -d $'\0' -r part; do
+			[ $has_var -eq 0 ] && dirvar_var="$part" && has_var=1 && continue
+			dirvar_val="$part"
+
+			eval "${dirvar_var}='${dirvar_val}'"
+			has_var=0
+		done < <(
+			bashrc.d associative peek-by-prefix dirvar "$dirvar_section // "
+			bashrc.d associative peek-by-prefix dirvar " // "
+		)
 	done < <(bashrc.d_dirvar_list-sections)
 	return 0
 }
 
 function bashrc.d_dirvar_reparse(){
-	__dirvar_keys=()
+	bashrc.d associative unset dirvar
 	__dirvars=()
 	[ -r /etc/dirvars ] && bashrc.d_dirvar_parse-ini /etc/dirvars
 	[ -r ~/.dirvars ] && bashrc.d_dirvar_parse-ini ~/.dirvars
