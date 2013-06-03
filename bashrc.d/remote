@@ -43,6 +43,10 @@ function bashrc.d_remote_sudo-alias(){
 }
 
 # prepare command to pass safely across a channel which does not split arguments
+# Note that this whole thing is ver pedentic and almost certainly unnecessary.
+# This can be emulated with a simple $(printf '%q ' "$@"). However, this carries
+# an implicit assumption that the meaning of '%q' by bash on one side is
+# compatible with whatever shell is on the remote side
 bashrc.d_remote_remotify(){
 	local base64=
 	local arguments=
