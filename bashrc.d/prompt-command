@@ -15,4 +15,8 @@ function bashrc.d_prompt-command_process(){
 		}
 	done < <(bashrc.d associative values prompt_command)
 }
+
+if [ -n "$PROMPT_COMMAND" -a "$PROMPT_COMMAND" != 'bashrc.d_prompt-command_process' ]; then
+	bashrc.d_prompt-command_poke 'PROMPT_COMMAND' "$PROMPT_COMMAND"
+fi
 PROMPT_COMMAND=bashrc.d_prompt-command_process
