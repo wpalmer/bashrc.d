@@ -49,7 +49,7 @@ function grep(){
 			if [ "$line" = "${line%/}" ]; then
 				extra_options[${#extra_options[@]}]="--exclude=$line"
 			else
-				extra_options[${#extra_options[@]}]="--exclude-dir=$line"
+				extra_options[${#extra_options[@]}]="--exclude-dir=${line%/}"
 			fi
 		done < <(sed -e '/^\s#/d' -e 's/^\s*//;' -e 's/\s*$//' ~/.grepignore)
 	fi
