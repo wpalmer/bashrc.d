@@ -1,4 +1,4 @@
-BASHRCD_PATH="${BASHRCD_PATH:-/etc/bashrc.d:~/.bashrc.d}"
+BASHRCD_PATH="${BASHRCD_PATH}:-/etc/bashrc.d:~/.bashrc.d"
 
 # Load a bashrc.d component (once), display profiling statistics, etc
 bashrc.d(){
