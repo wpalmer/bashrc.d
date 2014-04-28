@@ -192,7 +192,9 @@ USAGE
 	local expanded=()
 	if [ $do_expand -eq 1 ]; then
 		for entry in "${path[@]}"; do
-			eval entry="$(builtin printf '%q' "$entry")"
+			entry="$(builtin printf '%q' "$entry")"
+			[[ "${entry}" = "${entry#\\~}" ]] || entry="${entry:1}"
+			entry="$(eval builtin printf '%s' "$entry")"
 			entry="$(bashrc.d_core_-fullpath "$entry")"
 			[ -d "$entry" ] || continue
 			expanded[${#expanded[@]}]="$entry"
