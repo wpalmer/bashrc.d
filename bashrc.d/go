@@ -1,29 +1,44 @@
-__GO_WORKSPACE_ROOTS=(
-	$( [ -r "$HOME/.goworkspace" ] && command sed -n 's/\/\*$//p' "$HOME/.goworkspace" )
-)
-
 __AUTOGOPATH=
 bashrc.d_go_set-gopath(){
+	local goworkspace_dir="$( uproot .goworkspace )"
 	local gopath="$(
-		[ -r "$HOME/.goworkspace" ] &&
-			command grep -v '\/\*$' ~/.goworkspace |
-			command tr '\n' :|
-			command sed -e 's/^/:/' -e 's/::*/:/g' -e 's/:$//' -e 's/^:$//'
+		[[ -n "$goworkspace_dir" ]] &&
+		cd "$goworkspace_dir" ||
+		return 1
+		printf '%s\n' "$PWD"
 	)"
-	local workspaces
-	local workspace
 
-	for workspaces in "${__GO_WORKSPACE_ROOTS[@]}"; do
-		for workspace in "$workspaces"/*; do
-			[ -d "$workspace" ] || continue
-			[ -n "$gopath" ] && gopath="$gopath:"
-			gopath="$gopath$workspace"
-		done
-	done
+	local paths="$(
+		if
+			[[
+				-n "$gopath" &&
+				-s "$gopath/.goworkspace" &&
+				-r "$gopath/.goworkspace"
+			]]
+		then
+			{
+				command cat "$gopath/.goworkspace"
+				command echo
+				[[ -s "$HOME/.goworkspace" ]] && cat "$HOME/.goworkspace"
+			} |
+			command tr ':' '\n'|
+			command sed -e 's#^.\(/\|$\)#'"$gopath"'\1#'|
+			command tr '\n' :|
+			command sed -e 's#^:##' -e 's#::*#:#g' -e 's#:$##' -e 's#^:$##'
+		elif [[ -n "$gopath" ]]; then
+			printf '%s' "$gopath"
+		fi
+	)"
 
-	[ -n "$__FORCEGOPATH" -o "$GOPATH" = "$__AUTOGOPATH" ] && export GOPATH="$gopath"
-	__AUTOGOPATH="$gopath"
+	if
+		[[ -n "$paths" ]] &&
+		[[ -n "$__FORCEGOPATH" || "$GOPATH" = "$__AUTOGOPATH" ]]
+	then
+		export GOPATH="$paths"
+	fi
+
+	__AUTOGOPATH="$GOPATH"
 }
 
 __FORCEGOPATH=1 bashrc.d_go_set-gopath
-bashrc.d prompt-command poke bashrc.d_go_set-gopath
+bashrc.d prompt-command poke bashrc.d_go_set-gopath bashrc.d_go_set-gopath

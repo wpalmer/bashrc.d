@@ -1,0 +1,15 @@
+uproot(){
+	local indicator="${1}"
+	local up=.
+	local opwd=
+	[[ -z "$indicator" ]] && printf 'uproot: indicator required' >&2 && return 1
+	[[ -e "./$indicator" ]] && printf '%s\n' "." && return 0
+	(
+		while true; do
+			[[ "$PWD" = "$opwd" ]] && return 1
+			[[ -e "./$indicator" ]] && printf '%s\n' "${up#./}" && return 0
+			opwd="$PWD"; up="${up}/.."
+			cd .. || return 1
+		done
+	) || return 1
+}
