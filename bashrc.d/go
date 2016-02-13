@@ -35,6 +35,7 @@ bashrc.d_go_set-gopath(){
 		[[ -n "$__FORCEGOPATH" || "$GOPATH" = "$__AUTOGOPATH" ]]
 	then
 		export GOPATH="$paths"
+		export GOBIN="${paths%%:*}/bin"
 	fi
 
 	__AUTOGOPATH="$GOPATH"
