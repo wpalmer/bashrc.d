@@ -25,6 +25,8 @@ bashrc.d_go_set-gopath(){
 			} |
 			command tr ':' '\n'|
 			command sed -e 's#^\.\(/\|$\)#'"$gopath"'\1#'|
+			command sed -e '/^\s*$/d'|
+			command uniq|
 			command tr '\n' :|
 			command sed -e 's#^:##' -e 's#::*#:#g' -e 's#:$##' -e 's#^:$##'
 		elif [[ -n "$gopath" ]]; then
