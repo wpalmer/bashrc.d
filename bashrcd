@@ -239,7 +239,7 @@ USAGE
 				do_full=1
 				;;
 			-z)
-				terminator='\0'
+				terminator=''
 				z=( '-z' )
 				;;
 			--help)
@@ -288,8 +288,7 @@ USAGE
 					continue;
 				}
 
-				printf "%s", '"$output"';
-				system("printf \"\\0\"");
+				printf("%s%c", '"$output"', 0);
 			}
 		}}
 	'
